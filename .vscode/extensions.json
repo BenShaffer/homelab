@@ -1,3 +1,7 @@
 {
-  "recommendations": ["redhat.ansible", "redhat.vscode-redhat-account"]
+  "recommendations": [
+    "ms-vscode-remote.vscode-remote-extensionpack",
+    "redhat.ansible",
+    "eamodio.gitlens"
+  ]
 }
