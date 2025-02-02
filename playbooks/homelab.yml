@@ -1,46 +1,59 @@
 ---
-# - name: Update pi
-#   hosts: pi
-#   vars_files:
-#     - secrets.yml
+- name: Update pi
+  hosts: pi
+  vars_files:
+    - secrets.yml
 
-#   tasks:
-#     - name: Install Pi-hole prerequisites
-#       ansible.builtin.package:
-#         name:
-#           - curl
-#           - dnsutils
-#         state: present
+  tasks:
+    - name: Install pihole prerequisites
+      ansible.builtin.package:
+        name:
+          - dnsutils
+        state: present
 
-#     - name: Install Pi-hole
-#       ansible.builtin.shell: |
-#         curl -sSL https://install.pi-hole.net | bash
-#       args:
-#         creates: /etc/pihole/setupVars.conf  # Check if Pi-hole is already installed
+    - name: Download pihole installation script
+      ansible.builtin.get_url:
+        url: https://install.pi-hole.net
+        dest: /tmp/install.pi-hole.sh
+        mode: '0755'
 
-#     - name: Set Pi-hole DNS
-#       ansible.builtin.lineinfile:
-#         path: /etc/dhcpcd.conf
-#         line: "interface eth0\n  static ip_address=192.168.1.100/24\n  static routers=192.168.1.1\n  static domain_name_servers=127.0.0.1"
-#         state: present
+    - name: Install pihole
+      ansible.builtin.shell: |
+        set -o pipefail
+        curl -sSL https://install.pi-hole.net | bash
+      args:
+        creates: /etc/pihole/setupVars.conf  # Check if Pi-hole is already installed
 
-#     - name: Configure Pi-hole to use custom DNS (if needed)
-#       ansible.builtin.lineinfile:
-#         path: /etc/pihole/setupVars.conf
-#         regexp: '^DNS_'
-#         line: "DNS_1=1.1.1.1"
-#         state: present
+    - name: Configure pihole DHCP
+      notify: Restart pihole
+      ansible.builtin.template:
+        src: pihole-dhcpcd.conf.j2
+        dest: /etc/dhcpcd.conf
+        mode: u=rw,g=r,o=r
 
-#     - name: Configure Pi-hole web admin password
-#       ansible.builtin.shell: |
-#         pihole -a -p "{{ pihole_admin_password }}"
-#       when: pihole_admin_password is defined
+    - name: Configure pihole
+      notify: Restart pihole
+      ansible.builtin.template:
+        src: pihole-setup.conf.j2
+        dest: /etc/pihole/setupVars.conf
+        mode: u=rw,g=r,o=r
 
-#     - name: Start and enable Pi-hole service
-#       ansible.builtin.service:
-#         name: pihole-FTL
-#         state: started
-#         enabled: true
+    - name: Configure pihole web admin password
+      ansible.builtin.shell: |
+        pihole -a -p "{{ pihole_admin_password }}"
+      changed_when: true
+
+    - name: Start and enable Pi-hole service
+      ansible.builtin.service:
+        name: pihole-FTL
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Restart pihole
+      ansible.builtin.service:
+        name: pihole-FTL
+        state: restarted
 
 - name: Update server
   hosts: server
