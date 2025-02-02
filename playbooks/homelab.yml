@@ -154,3 +154,5 @@
       ansible.builtin.service:
         name: cron
         state: restarted
+
+# TODO: Add script to cron that executes the latest playbook from git every week

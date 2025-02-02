@@ -49,7 +49,7 @@ grafana_config:
     deleteContactPoints:
       - uid: ""
   grafana_dashboards:
-    - name: "{{ ansible_host }}"
+    - name: "{{ ansible_facts['fqdn'] | default(ansible_host) | default('localhost') }}"
       dashboard_id: 1860
       revision_id: 37 # https://grafana.com/grafana/dashboards/1860-node-exporter-full/
       datasource: prometheus
