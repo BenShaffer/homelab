@@ -172,3 +172,4 @@ cython_debug/
 
 .homelab-venv
 .vscode/settings.json
+.ssh

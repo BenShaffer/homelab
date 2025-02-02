@@ -1,34 +1,50 @@
 ---
-- name: Update web servers
-  hosts: webservers
+- name: Update pi
+  hosts: pi
   become: true
 
   tasks:
-    - name: Ensure apache is at the present version
-      ansible.builtin.dnf:
-        name: httpd
-        state: present
+    - name: Debug print task-1
+      ansible.builtin.debug:
+        msg: "This is task-1"
 
-    - name: Write the apache config file
-      ansible.builtin.template:
-        src: /srv/httpd.j2
-        dest: /etc/httpd.conf
-        mode: "0644"
+    - name: Test task
+      changed_when: false
+      ansible.builtin.command: /bin/hostname
 
-- name: Update db servers
-  hosts: databases
+    # - name: Ensure apache is at the present version
+    #   ansible.builtin.dnf:
+    #     name: httpd
+    #     state: present
+
+    # - name: Write the apache config file
+    #   ansible.builtin.template:
+    #     src: /srv/httpd.j2
+    #     dest: /etc/httpd.conf
+    #     mode: "0644"
+
+- name: Update server
+  hosts: server
   become: true
 
   tasks:
-    - name: Ensure postgresql is at the present version
-      ansible.builtin.dnf:
-        name: postgresql
-        state: present
+    - name: Debug print task-1
+      ansible.builtin.debug:
+        msg: "This is task-1"
 
-    - name: Ensure that postgresql is started
-      ansible.builtin.service:
-        name: postgresql
-        state: started
+    - name: Test task
+      changed_when: false
+      ansible.builtin.command: /bin/hostname
+
+    # - name: Ensure postgresql is at the present version
+    #   ansible.builtin.dnf:
+    #     name: postgresql
+    #     state: present
+
+    # - name: Ensure that postgresql is started
+    #   ansible.builtin.service:
+    #     name: postgresql
+    #     state: started
 
 - name: Fiddle around
   hosts: localhost
