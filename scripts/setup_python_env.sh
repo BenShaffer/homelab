@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Ensure script is always executed at project root
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
 # Create Python virtual env and load shell into env
 python3 -m venv .homelab-venv
 source ./.homelab-venv/bin/activate

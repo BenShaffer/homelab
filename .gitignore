@@ -173,3 +173,5 @@ cython_debug/
 .homelab-venv
 .vscode/settings.json
 .ssh
+vault_password.txt
+secrets.yml

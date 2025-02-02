@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Ensure script is always executed at project root
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
 # Define the target servers
 SERVERS=("urculoworm.dev" "pi.hole")  # Replace with your actual server IPs or hostnames
 USERNAME="ansible"

@@ -1,0 +1,4 @@
+---
+collections:
+  - name: grafana.grafana
+  - name: prometheus.prometheus

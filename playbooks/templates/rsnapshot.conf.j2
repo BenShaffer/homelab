@@ -1,0 +1,33 @@
+#################################################
+# rsnapshot.conf - rsnapshot configuration file	#
+# Docs: https://github.com/rsnapshot/rsnapshot	#
+#################################################
+#												#
+# PLEASE BE AWARE OF THE FOLLOWING RULE:		#
+# This file requires tabs between elements		#
+#												#
+# NOTE: This config is controlled by Ansible	#
+# and may be overwritten periodically.			#
+#################################################
+
+config_version	1.2
+snapshot_root	/media/backup
+no_create_root	1
+cmd_cp			/bin/cp
+cmd_rm			/bin/rm
+cmd_rsync		/usr/bin/rsync
+cmd_logger		/usr/bin/logger
+verbose			2
+loglevel		3
+logfile			/var/log/rsnapshot.log
+lockfile		/var/run/rsnapshot.pid
+
+retain	alpha	5
+retain	beta	5
+retain	gamma	5
+retain	delta	1
+
+backup	/home/			localhost/
+backup	/etc/			localhost/
+backup	/usr/local/		localhost/
+backup	/media/share	localhost/
