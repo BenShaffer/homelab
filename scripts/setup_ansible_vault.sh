@@ -18,6 +18,8 @@ secret_names=(
     "grafana_admin_user"
     "grafana_admin_password"
     "pihole_admin_password"
+    "samba_user"
+    "samba_pass"
 )
 
 # Create a temporary YAML file to hold the secrets
