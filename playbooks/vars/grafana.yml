@@ -1,0 +1,63 @@
+# https://github.com/grafana/grafana-ansible-collection/blob/main/roles/grafana/defaults/main.yml
+
+grafana_config:
+  ini:
+    paths:
+      logs: "/var/log/grafana"
+      data: "/var/lib/grafana"
+    server:
+      http_addr: "0.0.0.0"
+      http_port: 3000
+      domain: "{{ ansible_facts['fqdn'] | default(ansible_host) | default('localhost') }}"
+      protocol: http
+      enforce_domain: false
+      socket: ""
+      cert_key: ""
+      cert_file: ""
+      enable_gzip: false
+      static_root_path: public
+      router_logging: false
+      serve_from_sub_path: false
+    security:
+      admin_user: "{{ grafana_admin_user }}"
+      admin_password: "{{ grafana_admin_password }}"
+    database:
+      type: "sqlite3"
+      path: "/var/lib/grafana/grafana.db"
+    smtp:
+      enabled: true
+      host: smtp.gmail.com:465
+      user: "{{ grafana_notifications_service_account_user }}"
+      password: "{{ grafana_notifications_service_account_pass }}"
+      skip_verify: true
+    auth: {}
+  grafana_alert_resources:
+    contactPoints:
+      - name: Send to Admin
+        is_default: true
+        receivers:
+          - uid: admin_channel
+            type: email
+            settings:
+              addresses: "{{ grafana_notifications_service_account_user }}"
+            disableResolveMessage: false
+    policies:
+      - receiver: Send to Admin
+        group_by:
+          - grafana_folder
+          - alertname
+    deleteContactPoints:
+      - uid: ""
+  grafana_dashboards:
+    - name: "{{ ansible_host }}"
+      dashboard_id: 1860
+      revision_id: 37 # https://grafana.com/grafana/dashboards/1860-node-exporter-full/
+      datasource: prometheus
+  grafana_dashboards_dir: "dashboards"
+  grafana_datasources:
+    - name: prometheus
+      type: prometheus
+      access: proxy
+      basicAuth: false
+      url: http://localhost:9090
+  grafana_api_keys_dir: "{{ lookup('env', 'HOME') }}/grafana/keys"

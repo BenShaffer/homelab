@@ -9,3 +9,4 @@ source ./.homelab-venv/bin/activate
 
 # Install Python tools onto virtual Python env
 python3 -m pip install ansible-dev-tools
+python3 -m pip install jmespath

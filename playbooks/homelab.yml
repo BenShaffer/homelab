@@ -46,6 +46,7 @@
   hosts: server
   vars_files:
     - secrets.yml
+    - grafana.yml
 
   tasks:
     ## samba
@@ -93,15 +94,6 @@
         state: started
 
     ## prometheus
-    # https://oastic.com/posts/how-to-monitor-an-ubuntu-server-with-grafana-and-prometheus/
-    # Installed and it starts up every time I guess?
-    # Prometheus Node Exporter used for metric collection https://github.com/prometheus/node_exporter
-    # Need to update the OS collector mount points for Node exporter to catch it?
-    # --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
-    # Remove "dev"
-    # --collector.filesystem.mount-points-exclude=^/(proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
-    # https://github.com/prometheus/node_exporter/blob/master/collector/diskstats_linux.go
-    # https://github.com/prometheus/node_exporter/issues/332
     - name: Install prometheus
       ansible.builtin.include_role:
         name: prometheus.prometheus.prometheus
@@ -110,12 +102,12 @@
           {
             "job_name": "prometheus",
             "metrics_path": "{{ prometheus_metrics_path }}",
-            "static_configs": [{"targets": ["{{ ansible_host }}:9090"]}]
+            "static_configs": [{"targets": ["localhost:9090"]}]
           },
           {
             "job_name": "node_exporter",
             "metrics_path": "{{ prometheus_metrics_path }}",
-            "static_configs": [{"targets": ["{{ ansible_host }}:9100"]}]
+            "static_configs": [{"targets": ["localhost:9100"]}]
           },
         ]
 
@@ -124,71 +116,17 @@
         name: prometheus.prometheus.node_exporter
 
     ## grafana
-    - name: Load grafana alerts
-      ansible.builtin.set_fact:
-        alerts: "{{ lookup('file', 'grafana_alerts.json') }}"
-
     - name: Install grafana-server
       ansible.builtin.include_role:
         name: grafana.grafana.grafana
       vars:
-        grafana_ini:
-          grafana_alert_notifications:
-            notifiers:
-              - name: admin
-                type: email
-                uid: admin_channel
-                is_default: true
-                send_reminder: false
-                settings:
-                  addresses: "{{ grafana_notifications_service_account_user }}"
-                  autoResolve: true
-          grafana_alert_resources: "{{ alerts }}" # TODO: Alarms weird
-          grafana_dashboards: # TODO: Dashboard not working
-            - dashboard_id: 1860
-              revision_id: latest # 37 https://grafana.com/grafana/dashboards/1860-node-exporter-full/
-              datasource: prometheus
-          grafana_dashboards_dir: "dashboards"
-          grafana_datasources:
-            - name: prometheus
-              type: prometheus
-              access: proxy
-              basicAuth: false
-              url: http://localhost:9090
-          grafana_api_keys_dir: "{{ lookup('env', 'HOME') }}/grafana/keys"
-          security:
-            admin_user: "{{ grafana_admin_user }}"
-            admin_password: "{{ grafana_admin_password }}"
-          smtp:
-            enabled: true
-            host: smtp.gmail.com:465
-            user: "{{ grafana_notifications_service_account_user }}"
-            password: "{{ grafana_notifications_service_account_pass }}"
-            skip_verify: true
-          database:
-            type: "sqlite3"  # Or "mysql" or "postgres"
-            path: "/var/lib/grafana/grafana.db"  # For SQLite
-          paths:
-            logs: "/var/log/grafana"
-            data: "/var/lib/grafana"
-          server:
-            http_addr: "0.0.0.0"
-            http_port: 3000
-            domain: "{{ ansible_facts['fqdn'] | default(ansible_host) | default('localhost') }}"
-            protocol: http
-            enforce_domain: false
-            socket: ""
-            cert_key: ""
-            cert_file: ""
-            enable_gzip: false
-            static_root_path: public
-            router_logging: false
-            serve_from_sub_path: false
-          grafana_plugins: []
-          grafana_api_keys: []
-          auth: {}
-          grafana_ldap: {}
-          grafana_environment: {}
+        grafana_ini: "{{ grafana_config.ini }}"
+        grafana_alert_resources: "{{ grafana_config.grafana_alert_resources }}"
+        grafana_dashboards: "{{ grafana_config.grafana_dashboards }}"
+        grafana_dashboards_dir: "{{ grafana_config.grafana_dashboards_dir }}"
+        grafana_datasources: "{{ grafana_config.grafana_datasources }}"
+        grafana_api_keys_dir: "{{ grafana_config.grafana_api_keys_dir }}"
+        grafana_provisioning_synced: true
 
 
     ## TODO: vaultwarden

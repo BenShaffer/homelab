@@ -1,4 +1,5 @@
 ---
 collections:
   - name: grafana.grafana
+  - name: community.grafana
   - name: prometheus.prometheus
