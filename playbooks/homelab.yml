@@ -1,7 +1,6 @@
 ---
 - name: Update pi
   hosts: pi
-  become: true
 
   tasks:
     - name: Debug print task-1
@@ -25,7 +24,6 @@
 
 - name: Update server
   hosts: server
-  become: true
 
   tasks:
     - name: Debug print task-1
@@ -48,7 +46,6 @@
 
 - name: Fiddle around
   hosts: localhost
-  become: true
 
   tasks:
     - name: Debug print task-1
