@@ -1,0 +1,34 @@
+# This is the main Samba configuration file. You should read the
+# smb.conf(5) manual page in order to understand the options listed
+# here. Samba has a huge number of configurable options most of which 
+# are not shown in this example
+#
+# NOTE: This file is managed by Ansible and will be overwritten periodically
+
+[global]
+   workgroup = WORKGROUP
+   server string = %h Samba
+   log file = /var/log/samba/log.%m
+   max log size = 1000
+   logging = file
+   panic action = /usr/share/samba/panic-action %d
+   server role = standalone server
+   obey pam restrictions = yes
+   unix password sync = yes
+   passwd program = /usr/bin/passwd %u
+   passwd chat = *Enter\snew\s*\spassword:* %n\n *Retype\snew\s*\spassword:* %n\n *password\supdated\ssuccessfully* .
+   pam password change = yes
+   map to guest = bad user
+   usershare allow guests = yes
+
+[files]
+  comment = RAID1 configured storage
+  path = /media/share
+  read only = no
+  browsable = yes
+  writeable = yes
+  create mask = 0777
+  directory mask = 0777
+  force create mode = 0777
+  force directory mode = 0777
+  force user = bcsh

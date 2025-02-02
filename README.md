@@ -3,6 +3,10 @@
 This repository contains Ansible config, inventory, and playbooks to configure a homelab.
 Scripts are provided for easy setup.
 
+## Running
+
+In order to execute the playbook use the `ansible-playbook playbooks/homelab.yml` command.
+
 ## Ansible User / SSH Configs
 
 In order for Ansible to have permissions to the hosts defined, a user and SSH key must be

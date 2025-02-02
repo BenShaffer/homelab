@@ -1,116 +1,199 @@
 ---
-- name: Update pi
-  hosts: pi
+# - name: Update pi
+#   hosts: pi
 
-  tasks:
-    - name: Debug print task-1
-      ansible.builtin.debug:
-        msg: "This is task-1"
+#   tasks:
+#     - name: Install Pi-hole prerequisites
+#       ansible.builtin.package:
+#         name:
+#           - curl
+#           - dnsutils
+#         state: present
 
-    - name: Test task
-      changed_when: false
-      ansible.builtin.command: /bin/hostname
+#     - name: Install Pi-hole
+#       ansible.builtin.shell: |
+#         curl -sSL https://install.pi-hole.net | bash
+#       args:
+#         creates: /etc/pihole/setupVars.conf  # Check if Pi-hole is already installed
 
-    # - name: Ensure apache is at the present version
-    #   ansible.builtin.dnf:
-    #     name: httpd
-    #     state: present
+#     - name: Set Pi-hole DNS
+#       ansible.builtin.lineinfile:
+#         path: /etc/dhcpcd.conf
+#         line: "interface eth0\n  static ip_address=192.168.1.100/24\n  static routers=192.168.1.1\n  static domain_name_servers=127.0.0.1"
+#         state: present
 
-    # - name: Write the apache config file
-    #   ansible.builtin.template:
-    #     src: /srv/httpd.j2
-    #     dest: /etc/httpd.conf
-    #     mode: "0644"
+#     - name: Configure Pi-hole to use custom DNS (if needed)
+#       ansible.builtin.lineinfile:
+#         path: /etc/pihole/setupVars.conf
+#         regexp: '^DNS_'
+#         line: "DNS_1=1.1.1.1" 
+#         state: present
+
+#     - name: Configure Pi-hole web admin password
+#       ansible.builtin.shell: |
+#         pihole -a -p "{{ pihole_admin_password }}"
+#       when: pihole_admin_password is defined
+
+#     - name: Start and enable Pi-hole service
+#       ansible.builtin.service:
+#         name: pihole-FTL
+#         state: started
+#         enabled: true
 
 - name: Update server
   hosts: server
 
   tasks:
-    - name: Debug print task-1
-      ansible.builtin.debug:
-        msg: "This is task-1"
+    ## Samba
+    - name: Install samba
+      ansible.builtin.package:
+        name: samba
+        state: present
 
-    - name: Test task
-      changed_when: false
-      ansible.builtin.command: /bin/hostname
+    - name: Configure smb.conf
+      notify: Restart samba
+      ansible.builtin.template:
+        src: smb.conf.j2
+        dest: /etc/samba/smb.conf
+        mode: u=rw,g=r,o=r
 
-    # - name: Ensure postgresql is at the present version
-    #   ansible.builtin.dnf:
-    #     name: postgresql
+    - name: Ensure samba is enabled and running
+      ansible.builtin.service:
+        name: smbd
+        enabled: true
+        state: started
+
+    ## TODO: rsnapshot
+    # /etc/rsnapshot.conf
+    # /etc/cron.d/rsnapshot
+    # 4 times a day, once a week on Monday 3AM, once a month 4AM, once a year 5AM? 
+    # - name: Install rsnapshot
+    #   ansible.builtin.package:
+    #     name: rsnapshot
     #     state: present
 
-    # - name: Ensure that postgresql is started
+    # - name: Configure rsnapshot.conf
+    #   ansible.builtin.template:
+    #     src: rsnapshot.conf.j2
+    #     dest: /etc/rsnapshot.conf
+    #     mode: u=rw,g=r,o=r
+
+    # - name: Configure cron.d for rsnapshot
+    #   notify: Restart cron
+    #   ansible.builtin.template:
+    #     src: rsnapshot-cron.d.j2
+    #     dest: /etc/cron.d/rsnapshot
+    #     mode: u=rw,g=r,o=r
+
+    # - name: Ensure cron is running for rsnapshot
     #   ansible.builtin.service:
-    #     name: postgresql
+    #     name: cron
+    #     enabled: true
     #     state: started
 
-- name: Fiddle around
-  hosts: localhost
+    ## TODO: vaultwarden
+    # https://github.com/dani-garcia/vaultwarden/wiki
+    # - name: Install Vaultwarden
+    #   community.docker.docker_container:
+    #     name: vaultwarden
+    #     image: vaultwarden/server
+    #     state: started
+    #     restart_policy: always
+    #     published_ports:
+    #       - "80:80"
+    #       - "443:443"
+    #     env:
+    #       - ROCKET_PORT=443
+    #       - ROCKET_TLS='{certs="/path/to/cert.crt",key="/path/to/cert.key"}'
 
-  tasks:
-    - name: Debug print task-1
-      ansible.builtin.debug:
-        msg: "This is task-1"
+    ## TODO: Prometheus
+    # https://oastic.com/posts/how-to-monitor-an-ubuntu-server-with-grafana-and-prometheus/
+    # Installed and it starts up every time I guess?
+    # Prometheus Node Exporter used for metric collection https://github.com/prometheus/node_exporter
+    # Need to update the OS collector mount points for Node exporter to catch it?
+    # --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+    # Remove "dev"
+    # --collector.filesystem.mount-points-exclude=^/(proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+    # https://github.com/prometheus/node_exporter/blob/master/collector/diskstats_linux.go
+    # https://github.com/prometheus/node_exporter/issues/332
+    # - name: Install Prometheus
+    #   ansible.builtin.package:
+    #     name: prometheus
+    #     state: present
 
-    - name: Debug print task-2
-      ansible.builtin.debug:
-        msg: "This is task-2"
+    # - name: Configure Prometheus node exporter
+    #   ansible.builtin.template:
+    #     src: prometheus-node-exporter.j2
+    #     dest: /etc/prometheus/node_exporter.yml
+    #     mode: u=rw,g=r,o=r
 
-    - name: Debug print task-3
-      ansible.builtin.debug:
-        msg: "This is task-3"
+    # - name: Ensure Prometheus is running
+    #   ansible.builtin.service:
+    #     name: prometheus
+    #     enabled: true
+    #     state: started
 
-## Samba
+    # - name: Ensure node exporter is running
+    #   ansible.builtin.service:
+    #     name: prometheus-node-exporter
+    #     enabled: true
+    #     state: started
 
-# Config file: /etc/samba/smb.conf
-# Add the following:
-# [files]
-#   comment = RAID1 configured storage
-#   path = /media/share
-#   read only = no
-#   browsable = yes
-#   writeable = yes
-#   create mask = 0777
-#   directory mask = 0777
-#   force create mode = 0777
-#   force directory mode = 0777
-#   force user = bcsh
+    ## TODO: Grafana
+    # https://oastic.com/posts/how-to-monitor-an-ubuntu-server-with-grafana-and-prometheus/
 
-# /var/log/samba for connection logs
+    # sudo vim /etc/grafana/grafana.ini
+    # Port to 443? May need nginx in front of default 3000 for reverse proxy to host under DNS name.
+    # Set up SMTP support to send emails for alerting
+    # Set up dashboard and alarms  
+    # - name: Install Grafana
+    #   ansible.builtin.package:
+    #     name: grafana
+    #     state: present
 
-## rsnapshot
+    # - name: Configure Grafana settings
+    #   ansible.builtin.template:
+    #     src: grafana.ini.j2
+    #     dest: /etc/grafana/grafana.ini
+    #     mode: u=rw,g=r,o=r
 
-#!/bin/bash
+    # - name: Set up Grafana to start on boot
+    #   ansible.builtin.service:
+    #     name: grafana-server
+    #     enabled: true
+    #     state: started
 
-# /etc/rsnapshot.conf
-# /etc/cron.d/rsnapshot
-# 4 times a day, once a week on Monday 3AM, once a month 4AM, once a year 5AM? 
+    # - name: Configure Grafana reverse proxy (nginx setup)
+    #   # TODO: ???????
+    #   notify: Restart nginx
+    #   ansible.builtin.template:
+    #     src: grafana-nginx.conf.j2
+    #     dest: /etc/nginx/sites-available/grafana
+    #     mode: u=rw,g=r,o=r
 
-## vaultwarden
+    # - name: Set up Grafana dashboard and alerts
+    #   ansible.builtin.uri:
+    #     url: "http://{{ server_name }}:3000/api/dashboards/db"
+    #     method: POST
+    #     user: "{{ grafana_admin_user }}"
+    #     password: "{{ grafana_admin_password }}"
+    #     body: "{{ lookup('file', 'grafana-dashboard.json') }}"
+    #     headers:
+    #       Content-Type: "application/json"
+    #   delegate_to: localhost
 
-# https://github.com/dani-garcia/vaultwarden/wiki
+  handlers:
+    - name: Restart samba
+      ansible.builtin.service:
+        name: smbd
+        state: restarted
 
-## Prometheus
+    - name: Restart cron
+      ansible.builtin.service:
+        name: cron
+        state: restarted
 
-# https://oastic.com/posts/how-to-monitor-an-ubuntu-server-with-grafana-and-prometheus/
-# Installed and it starts up every time I guess?
-# Prometheus Node Exporter used for metric collection https://github.com/prometheus/node_exporter
-# Need to update the OS collector mount points for Node exporter to catch it?
-# --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
-# Remove "dev"
-# --collector.filesystem.mount-points-exclude=^/(proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
-# https://github.com/prometheus/node_exporter/blob/master/collector/diskstats_linux.go
-# https://github.com/prometheus/node_exporter/issues/332
-
-## pihole
-
-# Installed on base pi image and it just worked
-
-## Grafana
-
-# https://oastic.com/posts/how-to-monitor-an-ubuntu-server-with-grafana-and-prometheus/
-
-# sudo vim /etc/grafana/grafana.ini
-# Port to 443? May need nginx in front of default 3000 for reverse proxy to host under DNS name.
-# Set up SMTP support to send emails for alerting
-# Set up dashboard and alarms
+    - name: Restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted

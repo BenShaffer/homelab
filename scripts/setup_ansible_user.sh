@@ -5,7 +5,7 @@ SERVERS=("urculoworm.dev" "pi.hole")  # Replace with your actual server IPs or h
 USERNAME="ansible"
 SSH_KEY_FOLDER="./.ssh"
 SSH_KEY_PATH="$SSH_KEY_FOLDER/ansible"
-SUDO_USER="bcsh"
+SUDO_USER="bcsh" # Replace with your actual server sudoer
 
 # Prompt for the sudo password once
 read -s -p "Enter sudo password for $SUDO_USER: " SUDO_PASS
@@ -31,7 +31,7 @@ for SERVER in "${SERVERS[@]}"; do
     echo "$SUDO_PASS" | sudo -S ssh -t "$SUDO_USER@$SERVER" <<EOF
         # Add the user if they don't already exist
         echo "$SUDO_PASS" | sudo -S useradd -m -s /bin/bash $USERNAME || echo "User $USERNAME already exists"
-        
+
         echo "Creating SSH directory for $USERNAME..."
         echo "$SUDO_PASS" | sudo -S mkdir -p /home/$USERNAME/.ssh
 
@@ -47,6 +47,9 @@ for SERVER in "${SERVERS[@]}"; do
 
         echo "Ensuring the correct ownership of the SSH directory..."
         echo "$SUDO_PASS" | sudo -S chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
+
+        echo "Adding $USERNAME to sudoers with no password prompt..."
+        echo "$SUDO_PASS" | sudo -S sh -c "echo '$USERNAME ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/$USERNAME"
 
         echo "Server $SERVER setup completed!"
 EOF
