@@ -1,0 +1,103 @@
+---
+- name: Update web servers
+  hosts: webservers
+  become: true
+
+  tasks:
+    - name: Ensure apache is at the present version
+      ansible.builtin.dnf:
+        name: httpd
+        state: present
+
+    - name: Write the apache config file
+      ansible.builtin.template:
+        src: /srv/httpd.j2
+        dest: /etc/httpd.conf
+        mode: "0644"
+
+- name: Update db servers
+  hosts: databases
+  become: true
+
+  tasks:
+    - name: Ensure postgresql is at the present version
+      ansible.builtin.dnf:
+        name: postgresql
+        state: present
+
+    - name: Ensure that postgresql is started
+      ansible.builtin.service:
+        name: postgresql
+        state: started
+
+- name: Fiddle around
+  hosts: localhost
+  become: true
+
+  tasks:
+    - name: Debug print task-1
+      ansible.builtin.debug:
+        msg: "This is task-1"
+
+    - name: Debug print task-2
+      ansible.builtin.debug:
+        msg: "This is task-2"
+
+    - name: Debug print task-3
+      ansible.builtin.debug:
+        msg: "This is task-3"
+
+## Samba
+
+# Config file: /etc/samba/smb.conf
+# Add the following:
+# [files]
+#   comment = RAID1 configured storage
+#   path = /media/share
+#   read only = no
+#   browsable = yes
+#   writeable = yes
+#   create mask = 0777
+#   directory mask = 0777
+#   force create mode = 0777
+#   force directory mode = 0777
+#   force user = bcsh
+
+# /var/log/samba for connection logs
+
+## rsnapshot
+
+#!/bin/bash
+
+# /etc/rsnapshot.conf
+# /etc/cron.d/rsnapshot
+# 4 times a day, once a week on Monday 3AM, once a month 4AM, once a year 5AM? 
+
+## vaultwarden
+
+# https://github.com/dani-garcia/vaultwarden/wiki
+
+## Prometheus
+
+# https://oastic.com/posts/how-to-monitor-an-ubuntu-server-with-grafana-and-prometheus/
+# Installed and it starts up every time I guess?
+# Prometheus Node Exporter used for metric collection https://github.com/prometheus/node_exporter
+# Need to update the OS collector mount points for Node exporter to catch it?
+# --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+# Remove "dev"
+# --collector.filesystem.mount-points-exclude=^/(proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+# https://github.com/prometheus/node_exporter/blob/master/collector/diskstats_linux.go
+# https://github.com/prometheus/node_exporter/issues/332
+
+## pihole
+
+# Installed on base pi image and it just worked
+
+## Grafana
+
+# https://oastic.com/posts/how-to-monitor-an-ubuntu-server-with-grafana-and-prometheus/
+
+# sudo vim /etc/grafana/grafana.ini
+# Port to 443? May need nginx in front of default 3000 for reverse proxy to host under DNS name.
+# Set up SMTP support to send emails for alerting
+# Set up dashboard and alarms

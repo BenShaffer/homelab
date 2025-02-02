@@ -1,0 +1,3 @@
+---
+server_name: pi.hole
+ansible_host: 192.168.1.73

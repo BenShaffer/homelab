@@ -1,1 +1,0 @@
-# Installed on base pi image and it just worked
